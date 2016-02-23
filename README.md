@@ -1,2 +1,2 @@
 # l3
-Homework for third lecture
+Homework for third lecture.
