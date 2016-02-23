@@ -1,16 +1,16 @@
 -module(bs03v1).
 -export([split/2]).
 
-split(Bin,D) ->
-	Bd = list_to_binary(D),
-	S = size(Bd),
-	split(Bin,Bd,S,<<>>).
+split(Bin,Del) ->
+	BDel = list_to_binary(Del),
+	S = size(BDel),
+	split(Bin,BDel,S,<<>>).
 
-split(Bin,Bd,S,Acc) ->
+split(Bin,BDel,S,Acc) ->
 	case Bin of
-		<<Bd:S/binary,Remain/binary>> ->
-			[Acc|split(Remain,Bd,S,<<>>)];
+		<<BDel:S/binary,Remain/binary>> ->
+			[Acc|split(Remain,BDel,S,<<>>)];
 		<<X,Remain/binary>> ->
-			split(Remain,Bd,S,<<Acc/binary,X>>);
+			split(Remain,BDel,S,<<Acc/binary,X>>);
 		<<>> -> [Acc]
 	end.
