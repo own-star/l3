@@ -38,11 +38,12 @@ start_comment(<<"-->",Rest/binary>>,Stack,AStack) ->
 start_comment(<<_,Rest/binary>>,Stack,AStack) ->
 	start_comment(Rest,Stack,AStack).
 
-
 start_attr(<<" />",_/binary>>=Rest,Tag,Stack,AStack,_) ->
 	start_tag(Rest,Tag,Stack,AStack);
 start_attr(<<">",_/binary>>=Rest,Tag,Stack,AStack,_) ->
 	start_tag(Rest,Tag,Stack,AStack);
+start_attr(<<" ",Rest/binary>>,Tag,Stack,AStack,Acc) ->
+	start_attr(Rest,Tag,Stack,AStack,Acc);
 start_attr(<<"'",Rest/binary>>,Tag,Stack,[H|AStack],Acc) ->
 	start_attr(Rest,Tag,Stack,[{Tag, H, Acc}|AStack],<<>>);
 start_attr(<<"='",Rest/binary>>,Tag,Stack,AStack,Acc) ->
