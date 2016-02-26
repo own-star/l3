@@ -42,13 +42,17 @@ start_attr(<<" />",_/binary>>=Rest,Tag,Stack,AStack,_) ->
 	start_tag(Rest,Tag,Stack,AStack);
 start_attr(<<">",_/binary>>=Rest,Tag,Stack,AStack,_) ->
 	start_tag(Rest,Tag,Stack,AStack);
+start_attr(<<" ",Rest/binary>>,Tag,[open|_]=Stack,AStack,Acc) ->
+	io:format("Space Stack: ~p~n",[Stack]),
+	start_attr(Rest,Tag,Stack,AStack,<<Acc/binary," ">>);
 start_attr(<<" ",Rest/binary>>,Tag,Stack,AStack,Acc) ->
 	start_attr(Rest,Tag,Stack,AStack,Acc);
-start_attr(<<"'",Rest/binary>>,Tag,Stack,[H|AStack],Acc) ->
+start_attr(<<"'",Rest/binary>>,Tag,[_|Stack],[H|AStack],Acc) ->
 	start_attr(Rest,Tag,Stack,[{Tag, H, Acc}|AStack],<<>>);
 start_attr(<<"='",Rest/binary>>,Tag,Stack,AStack,Acc) ->
-	start_attr(Rest,Tag,Stack,[Acc|AStack],<<>>);
+	start_attr(Rest,Tag,[open|Stack],[Acc|AStack],<<>>);
 start_attr(<<X,Rest/binary>>,Tag,Stack,AStack,Acc) ->
+	io:format("Stack: ~p~n",[Stack]),
 	start_attr(Rest,Tag,Stack,AStack,<<Acc/binary,X>>).
 
 get_attr(Tag,Stack) ->
