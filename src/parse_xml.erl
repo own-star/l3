@@ -31,6 +31,8 @@ start_tag(<<" ",Rest/binary>>,Acc,Stack,[open|_]=AStack) ->
 	start_tag(Rest,<<Acc/binary," ">>,Stack,AStack);
 start_tag(<<" ",Rest/binary>>,Acc,Stack,AStack) ->
 	start_attr(Rest,Acc,Stack,AStack,<<>>);
+start_tag(<<"/>",Rest/binary>>,Acc,Stack,AStack) ->
+	[{Acc, [], []}|decode_xml(Rest,Stack,AStack)];
 start_tag(<<"</",Rest/binary>>,Acc,[Tag|Stack],[_|AStack]) ->
 	[{Tag, get_attr(Tag,AStack,[]), [Acc]}|stop_tag(Rest,<<>>,[Tag|Stack],del_stack(Tag,AStack))];
 start_tag(<<"<",Rest/binary>>,<<>>,[Tag|[]],[_|AStack]) ->
@@ -59,11 +61,13 @@ start_comment(<<"-->",Rest/binary>>,Stack,AStack) ->
 start_comment(<<_,Rest/binary>>,Stack,AStack) ->
 	start_comment(Rest,Stack,AStack).
 
+start_attr(<<" />",Rest/binary>>,Tag,Stack,AStack,_) ->
+	[{Tag, get_attr(Tag,AStack,[]), []}|decode_xml(Rest,Stack,del_stack(Tag,AStack))];
 start_attr(<<"/>",Rest/binary>>,Tag,Stack,AStack,_) ->
 	[{Tag, get_attr(Tag,AStack,[]), []}|decode_xml(Rest,Stack,del_stack(Tag,AStack))];
 start_attr(<<">",_/binary>>=Rest,Tag,Stack,AStack,_) ->
 	start_tag(Rest,Tag,Stack,AStack);
-start_attr(<<" ",Rest/binary>>,Tag,[open|_]=Stack,AStack,Acc) ->
+start_attr(<<" ",Rest/binary>>,Tag,[single|_]=Stack,AStack,Acc) ->
 	start_attr(Rest,Tag,Stack,AStack,<<Acc/binary," ">>);
 start_attr(<<" ",Rest/binary>>,Tag,[double|_]=Stack,AStack,Acc) ->
 	start_attr(Rest,Tag,Stack,AStack,<<Acc/binary," ">>);
@@ -73,16 +77,16 @@ start_attr(<<" ",Rest/binary>>,Tag,Stack,AStack,Acc) ->
 	start_attr(Rest,Tag,Stack,AStack,Acc);
 
 start_attr(<<"'",Rest/binary>>,Tag,Stack,AStack,<<>>) ->   %%Match single quote start attribute value
-	start_attr(Rest,Tag,[open|Stack],AStack,<<>>);
+	start_attr(Rest,Tag,[single|Stack],AStack,<<>>);
 start_attr(<<"'",Rest/binary>>,Tag,[_|Stack],[H|AStack],Acc) ->   %Single quote stop attr value
 	start_attr(Rest,Tag,Stack,[{Tag, H, Acc}|AStack],<<>>);
 
+start_attr(<<34,Rest/binary>>,Tag,[double|Stack],[H|AStack],Acc) -> %%Stop doubel quoted value
+	start_attr(Rest,Tag,Stack,[{Tag, H, Acc}|AStack],<<>>);
 start_attr(<<34,Rest/binary>>,Tag,Stack,AStack,<<>>) ->    %%Match double quote start value
 	start_attr(Rest,Tag,[double|Stack],AStack,<<>>);
-start_attr(<<34,Rest/binary>>,Tag,[open|_]=Stack,AStack,Acc) ->  %%Siingle quoted double quote 
+start_attr(<<34,Rest/binary>>,Tag,[single|_]=Stack,AStack,Acc) ->  %%Siingle quoted double quote 
 	start_attr(Rest,Tag,Stack,AStack,<<Acc/binary,34>>);
-start_attr(<<34,Rest/binary>>,Tag,[_|Stack],[H|AStack],Acc) -> %%Stop doubel quoted value
-	start_attr(Rest,Tag,Stack,[{Tag, H, Acc}|AStack],<<>>);
 
 start_attr(<<"=",Rest/binary>>,Tag,Stack,AStack,Acc) ->      
 	start_attr(Rest,Tag,Stack,[Acc|AStack],<<>>);
@@ -90,12 +94,13 @@ start_attr(<<X,Rest/binary>>,Tag,Stack,AStack,Acc) ->
 	start_attr(Rest,Tag,Stack,AStack,<<Acc/binary,X>>).
 
 get_attr(Tag,[{Tag,Key,Val}|Stack],Acc) ->
-%	[{Key, Val} || {T, Key, Val} <- Stack, T =:= Tag].
 	get_attr(Tag,Stack,[{Key,Val}|Acc]);
 get_attr(_,_,Acc) ->
 	Acc.
 
 del_stack(Tag,[{Tag,_,_}|Stack]) ->
+	del_stack(Tag,Stack);
+del_stack(Tag,[open|Stack]) ->
 	del_stack(Tag,Stack);
 del_stack(_,Stack) ->
 	Stack.
